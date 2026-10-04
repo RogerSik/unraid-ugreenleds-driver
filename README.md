@@ -125,6 +125,10 @@ Every install is pinned to a release; updates show up in the plugin manager when
 2. Merge to `master`, then tag and push: `git tag 2026.10.04 && git push origin 2026.10.04`
 3. The `Release plugin` workflow builds the package, fills version and MD5 into the plg and publishes the GitHub release
 
+## Kernel modules
+
+The `Build kernel modules` workflow runs daily: it checks unRAID's release feed (stable + latest next, from 7.3.2 on), downloads the release, takes kernel config and patches from `bzmodules` and builds `led-ugreen` against the matching vanilla kernel (`source/build-kmod.sh`). Each kernel gets its own release (tag = kernel release, e.g. `6.18.38-Unraid`), the notes list the unRAID versions using it. Run it by hand via *Actions > Build kernel modules > Run workflow*, optionally for one unRAID version.
+
 ## Troubleshooting
 
 - **LEDs not working**: Check if your model is supported and ensure the kernel module loaded correctly

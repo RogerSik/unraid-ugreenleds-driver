@@ -51,6 +51,8 @@ fi
 # define functions
 default_modules() {
   /sbin/modprobe i2c-dev
+  # own kernel builds carry no module dependencies, load them explicitly
+  /sbin/modprobe led-class
   /sbin/modprobe led-ugreen
   sleep 1
   I2C_DEV=$(i2cdetect -l | grep "SMBus I801 adapter" | grep -Po "i2c-\d+")

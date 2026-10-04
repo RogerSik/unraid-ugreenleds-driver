@@ -14,7 +14,7 @@
   <!ENTITY packages    "/boot/config/plugins/&name;/packages">
 ]>
 
-<PLUGIN  name="&name;" author="&author;" version="&version;" pluginURL="&pluginURL;" min="7.0.0-beta.0.1" max="7.3.2" support="&repoURL;/issues">
+<PLUGIN  name="&name;" author="&author;" version="&version;" pluginURL="&pluginURL;" min="7.0.0-beta.0.1" support="&repoURL;/issues">
 
 <CHANGES>
 
@@ -23,7 +23,8 @@
 - Versioned installs from GitHub releases
 - Network LED can act as status LED for unread unRAID notifications (default)
 - Settings page under Settings > User Utilities > UGREEN LEDs
-- Kernel packages from own releases, ich777 releases as fallback
+- Kernel packages built by GitHub Actions for new unRAID releases (own releases first, ich777 as fallback)
+- No max unRAID version anymore
 
 ###2026.09.05
 - Increase the interval from netdev to 500ms
