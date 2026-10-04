@@ -1,0 +1,87 @@
+name: Build kernel modules
+
+# builds the led-ugreen module for new unRAID releases; one release per kernel (tag = kernel release)
+on:
+  schedule:
+    - cron: "23 4 * * *"
+  workflow_dispatch:
+    inputs:
+      unraid_version:
+        description: "Only this unRAID version (also rebuilds notes if already built)"
+        required: false
+
+permissions:
+  contents: write
+
+jobs:
+  discover:
+    runs-on: ubuntu-latest
+    outputs:
+      releases: ${{ steps.find.outputs.releases }}
+    steps:
+      - uses: actions/checkout@v5
+      - id: find
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          releases="$(bash source/discover-unraid.sh "${{ inputs.unraid_version }}")"
+          echo "$releases" | jq .
+          echo "releases=$releases" >> "$GITHUB_OUTPUT"
+
+  build:
+    needs: discover
+    if: needs.discover.outputs.releases != '[]'
+    runs-on: ubuntu-latest
+    strategy:
+      # serial, so two unRAID versions with the same kernel don't race on one release
+      max-parallel: 1
+      fail-fast: false
+      matrix:
+        unraid: ${{ fromJSON(needs.discover.outputs.releases) }}
+    name: unRAID ${{ matrix.unraid.version }}
+    env:
+      GH_TOKEN: ${{ github.token }}
+      UNRAID_VERSION: ${{ matrix.unraid.version }}
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Get unRAID kernel sources
+        run: |
+          sudo apt-get install -y -qq squashfs-tools >/dev/null
+          curl -sfL -o unraid.zip "${{ matrix.unraid.url }}"
+          echo "${{ matrix.unraid.sha256 }}  unraid.zip" | sha256sum -c -
+          unzip -q unraid.zip bzmodules && rm unraid.zip
+          unsquashfs -q -d bzmodules-root bzmodules src && rm bzmodules
+          KSRC="$(ls -d bzmodules-root/src/linux-*-Unraid)"
+          echo "KSRC=$KSRC" >> "$GITHUB_ENV"
+          echo "KREL=$(basename "$KSRC" | sed 's/^linux-//')" >> "$GITHUB_ENV"
+
+      - name: Check existing release
+        id: existing
+        run: |
+          if gh release view "$KREL" >/dev/null 2>&1; then
+            echo "exists=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Build module
+        if: steps.existing.outputs.exists != 'true'
+        run: |
+          docker run --rm -v "$PWD:/repo" -w /repo gcc:15 bash -c '
+            apt-get update -qq && apt-get install -y -qq bc bison flex libelf-dev libssl-dev kmod xz-utils >/dev/null
+            bash source/build-kmod.sh "$0" dist && chown -R '"$(id -u):$(id -g)"' dist' "$KSRC"
+
+      - name: Publish release
+        if: steps.existing.outputs.exists != 'true'
+        run: |
+          gh release create "$KREL" dist/* \
+            --title "Kernel $KREL" \
+            --notes "Unraid ${UNRAID_VERSION}" \
+            --latest=false
+
+      - name: Add unRAID version to existing release
+        if: steps.existing.outputs.exists == 'true'
+        run: |
+          notes="$(gh release view "$KREL" --json body --jq .body)"
+          if ! grep -qx "Unraid ${UNRAID_VERSION}" <<< "$notes"; then
+            gh release edit "$KREL" --notes "$(printf '%s\nUnraid %s' "$notes" "$UNRAID_VERSION")"
+          fi

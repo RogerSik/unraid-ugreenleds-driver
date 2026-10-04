@@ -2,7 +2,7 @@
 
 > Continuation of [ich777/unraid-ugreenleds-driver](https://github.com/ich777/unraid-ugreenleds-driver) (archived). Adds a status mode for the network LED and a settings page.
 >
-> **Install:** Plugins > Install Plugin > `https://github.com/RogerSik/unraid-ugreenleds-driver/raw/master/ugreenleds-driver.plg`
+> **Install:** Plugins > Install Plugin > `https://github.com/RogerSik/unraid-ugreenleds-driver/releases/latest/download/ugreenleds-driver.plg`
 
 This is the repository for the Unraid UGREEN LED Driver plugin based on: https://github.com/miskcoo/ugreen_leds_controller
 
@@ -112,10 +112,22 @@ The plugin creates a `settings.cfg` file with these configurable parameters. The
 
 ## Installation
 
-1. Install the plugin through the Unraid Community Applications or manually
+1. Plugins > Install Plugin > `https://github.com/RogerSik/unraid-ugreenleds-driver/releases/latest/download/ugreenleds-driver.plg`
 2. The plugin will automatically detect your UGREEN NAS model
 3. Configuration file will be created at `/boot/config/plugins/ugreenleds-driver/settings.cfg`
 4. LEDs will start working immediately after installation
+
+Every install is pinned to a release; updates show up in the plugin manager when a newer release is published.
+
+## Releasing
+
+1. Add a `###<version>` entry (e.g. `###2026.10.04`) to `<CHANGES>` in `ugreenleds-driver.plg`
+2. Merge to `main`, then tag and push: `git tag 2026.10.04 && git push origin 2026.10.04`
+3. The `Release plugin` workflow builds the package, fills version and MD5 into the plg and publishes the GitHub release
+
+## Kernel modules
+
+The `Build kernel modules` workflow runs daily: it checks unRAID's release feed (stable + latest next, from 7.3.2 on), downloads the release, takes kernel config and patches from `bzmodules` and builds `led-ugreen` against the matching vanilla kernel (`source/build-kmod.sh`). Each kernel gets its own release (tag = kernel release, e.g. `6.18.38-Unraid`), the notes list the unRAID versions using it. Run it by hand via *Actions > Build kernel modules > Run workflow*, optionally for one unRAID version.
 
 ## Troubleshooting
 

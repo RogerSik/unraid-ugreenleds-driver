@@ -1,0 +1,37 @@
+name: Release plugin
+
+# push a tag like 2026.10.04 (same-day follow-ups: 2026.10.04a) to publish a version
+on:
+  push:
+    tags:
+      - "20[0-9][0-9].[0-9][0-9].[0-9][0-9]*"
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Check CHANGES entry
+        run: |
+          grep -qx "###${GITHUB_REF_NAME}" ugreenleds-driver.plg || { echo "No CHANGES entry ###${GITHUB_REF_NAME} in plg"; exit 1; }
+
+      - name: Build
+        run: bash source/build-plugin.sh "${GITHUB_REF_NAME}" dist
+
+      - name: Publish release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "${GITHUB_REF_NAME}" \
+            --title "${GITHUB_REF_NAME}" \
+            --notes-file dist/notes.md \
+            --latest \
+            dist/ugreenleds-driver.plg \
+            "dist/ugreenleds-driver-${GITHUB_REF_NAME}.txz" \
+            "dist/ugreenleds-driver-${GITHUB_REF_NAME}.txz.md5" \
+            dist/i2c-tools-*-x86_64-1.txz \
+            dist/ugreenleds-driver.png
