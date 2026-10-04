@@ -2,23 +2,25 @@
 <!DOCTYPE PLUGIN [
   <!ENTITY name        "ugreenleds-driver">
   <!ENTITY author      "RogerSik">
-  <!ENTITY version     "2026.10.04">
-  <!ENTITY md5         "0fdf0d79b9d55acfa8f49f3a219c6ef6">
+  <!ENTITY version     "@VERSION@">
+  <!ENTITY md5         "@MD5@">
   <!ENTITY i2c-version "4.3">
   <!ENTITY i2c-md5     "779c835a2eb2e2ae65319f8de2d6a7d3">
-  <!ENTITY gitURL      "https://github.com/&author;/unraid-&name;/raw/master">
-  <!ENTITY pluginURL   "&gitURL;/&name;.plg">
+  <!ENTITY repoURL     "https://github.com/&author;/unraid-&name;">
+  <!ENTITY relURL      "&repoURL;/releases/download/&version;">
+  <!ENTITY pluginURL   "&repoURL;/releases/latest/download/&name;.plg">
   <!ENTITY plugin      "/boot/config/plugins/&name;">
   <!ENTITY emhttp      "/usr/local/emhttp/plugins/&name;">
   <!ENTITY packages    "/boot/config/plugins/&name;/packages">
 ]>
 
-<PLUGIN  name="&name;" author="&author;" version="&version;" pluginURL="&pluginURL;" min="7.0.0-beta.0.1" max="7.3.2" support="https://github.com/&author;/unraid-&name;/issues">
+<PLUGIN  name="&name;" author="&author;" version="&version;" pluginURL="&pluginURL;" min="7.0.0-beta.0.1" max="7.3.2" support="&repoURL;/issues">
 
 <CHANGES>
 
 ###2026.10.04
-- Fork of ich777/unraid-ugreenleds-driver
+- Continuation of ich777/unraid-ugreenleds-driver (archived)
+- Versioned installs from GitHub releases
 - Network LED can act as status LED for unread unRAID notifications (default)
 - Settings page under Settings > User Utilities > UGREEN LEDs
 - Kernel packages from own releases, ich777 releases as fallback
@@ -55,7 +57,7 @@ rm -f $(ls &plugin;/&name;-*.txz 2>/dev/null|grep -v '&version;')
 </FILE>
 
 <FILE Name="&plugin;/&name;-&version;.txz" Run="upgradepkg --install-new">
-<URL>&gitURL;/packages/&name;-&version;.txz</URL>
+<URL>&relURL;/&name;-&version;.txz</URL>
 <MD5>&md5;</MD5>
 </FILE>
 
@@ -66,7 +68,7 @@ rm -f $(ls &plugin;/i2c-tools-*-x86_64-1.txz 2>/dev/null|grep -v '&i2c-version;'
 </FILE>
 
 <FILE Name="&plugin;/i2c-tools-&i2c-version;-x86_64-1.txz" Run="upgradepkg --install-new">
-<URL>&gitURL;/packages/i2c-tools-&i2c-version;-x86_64-1.txz</URL>
+<URL>&relURL;/i2c-tools-&i2c-version;-x86_64-1.txz</URL>
 <MD5>&i2c-md5;</MD5>
 </FILE>
 
@@ -173,7 +175,7 @@ fi
 
 # Download logo
 if [ ! -f "&plugin;/&name;.png" ]; then
-  wget -q -nc --show-progress --progress=bar:force:noscroll -O "&plugin;/&name;.png" "&gitURL;/images/&name;.png"
+  wget -q -nc --show-progress --progress=bar:force:noscroll -O "&plugin;/&name;.png" "&relURL;/&name;.png"
 fi
 
 #Install icon

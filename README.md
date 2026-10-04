@@ -2,7 +2,7 @@
 
 > Continuation of [ich777/unraid-ugreenleds-driver](https://github.com/ich777/unraid-ugreenleds-driver) (archived). Adds a status mode for the network LED and a settings page.
 >
-> **Install:** Plugins > Install Plugin > `https://github.com/RogerSik/unraid-ugreenleds-driver/raw/master/ugreenleds-driver.plg`
+> **Install:** Plugins > Install Plugin > `https://github.com/RogerSik/unraid-ugreenleds-driver/releases/latest/download/ugreenleds-driver.plg`
 
 This is the repository for the Unraid UGREEN LED Driver plugin based on: https://github.com/miskcoo/ugreen_leds_controller
 
@@ -112,10 +112,18 @@ The plugin creates a `settings.cfg` file with these configurable parameters. The
 
 ## Installation
 
-1. Install the plugin through the Unraid Community Applications or manually
+1. Plugins > Install Plugin > `https://github.com/RogerSik/unraid-ugreenleds-driver/releases/latest/download/ugreenleds-driver.plg`
 2. The plugin will automatically detect your UGREEN NAS model
 3. Configuration file will be created at `/boot/config/plugins/ugreenleds-driver/settings.cfg`
 4. LEDs will start working immediately after installation
+
+Every install is pinned to a release; updates show up in the plugin manager when a newer release is published.
+
+## Releasing
+
+1. Add a `###<version>` entry (e.g. `###2026.10.04`) to `<CHANGES>` in `ugreenleds-driver.plg`
+2. Merge to `master`, then tag and push: `git tag 2026.10.04 && git push origin 2026.10.04`
+3. The `Release plugin` workflow builds the package, fills version and MD5 into the plg and publishes the GitHub release
 
 ## Troubleshooting
 
