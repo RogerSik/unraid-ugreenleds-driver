@@ -122,7 +122,7 @@ Every install is pinned to a release; updates show up in the plugin manager when
 ## Releasing
 
 1. Add a `###<version>` entry (e.g. `###2026.10.04`) to `<CHANGES>` in `ugreenleds-driver.plg`
-2. Merge to `master`, then tag and push: `git tag 2026.10.04 && git push origin 2026.10.04`
+2. Merge to `main`, then tag and push: `git tag 2026.10.04 && git push origin 2026.10.04`
 3. The `Release plugin` workflow builds the package, fills version and MD5 into the plg and publishes the GitHub release
 
 ## Kernel modules
