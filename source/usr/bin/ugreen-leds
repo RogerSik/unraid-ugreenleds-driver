@@ -20,7 +20,8 @@ if [[ -f "/var/run/ugreen-leds.lock" ]]; then
 fi
 touch /var/run/ugreen-leds.lock
 
-# use variables from config file (unRAID specific)
+# use variables from config file (unRAID specific), defaults first so new keys work with old settings
+source /usr/local/emhttp/plugins/ugreenleds-driver/default.cfg
 source /boot/config/plugins/ugreenleds-driver/settings.cfg
 
 # hctl, $> lsblk -S -x hctl -o hctl,serial,name 
@@ -163,6 +164,47 @@ function set_netdev_color() {
   echo "$color" > /sys/class/leds/netdev/color
 }
 
+# prints the highest importance (alert/warning) of unread unRAID notifications
+function unread_notify_level() {
+  local notify_path
+  notify_path="$(sed -n '/^\[notify\]/,/^\[/s/^path="\(.*\)"/\1/p' /boot/config/plugins/dynamix/dynamix.cfg 2>/dev/null)"
+  local levels="$(cat "${notify_path:-/tmp/notifications}"/unread/*.notify 2>/dev/null | grep -oE '^importance="?(alert|warning)')"
+  if [[ $levels == *alert* ]]; then
+    echo alert
+  elif [[ $levels == *warning* ]]; then
+    echo warning
+  fi
+}
+
+# status mode: netdev LED shows unread notifications and gateway connectivity
+function status_led_loop() {
+  local gw_ok=true last_gw_check=0 current="" color now level
+  while true; do
+    now=$(date +%s)
+    if [ "$CHECK_GATEWAY_CONNECTIVITY" == "true" ] && (( now - last_gw_check >= CHECK_NETDEV_INTERVAL )); then
+      gw=$(ip route | awk '/default/ { print $3 }' | head -1)
+      if ping -q -c 1 -W 1 $gw >/dev/null; then gw_ok=true; else gw_ok=false; fi
+      last_gw_check=$now
+    fi
+    level=""
+    if [ "$STATUS_NOTIFY_LEVEL" != "off" ]; then
+      level=$(unread_notify_level)
+    fi
+    if [ "$gw_ok" != "true" ] || [ "$level" == "alert" ]; then
+      color="$COLOR_STATUS_ALERT"
+    elif [ "$level" == "warning" ] && [ "$STATUS_NOTIFY_LEVEL" == "warning" ]; then
+      color="$COLOR_STATUS_WARNING"
+    else
+      color="$COLOR_STATUS_OK"
+    fi
+    if [ "$color" != "$current" ]; then
+      echo "$color" > /sys/class/leds/netdev/color
+      current="$color"
+    fi
+    sleep ${CHECK_STATUS_INTERVAL}s
+  done
+}
+
 logger "ugreen-leds: Info: Enumerating disks based on $MAPPING_METHOD..."
 declare -A dev_map
 while read line
@@ -208,8 +250,15 @@ for i in "${!led_map[@]}"; do
   fi
 done
 
-# check gw connection
-if [ "$CHECK_GATEWAY_CONNECTIVITY" == "true" ]; then
+# netdev LED as status LED, or speed/gw indicator (original behaviour)
+if [ "$NETDEV_MODE" == "status" ]; then
+  if [ "$NETDEV_BLINK_ACTIVITY" != "true" ]; then
+    echo none > /sys/class/leds/netdev/trigger
+    echo 255 > /sys/class/leds/netdev/brightness
+  fi
+  status_led_loop &
+  netdev_check_pid=$!
+elif [ "$CHECK_GATEWAY_CONNECTIVITY" == "true" ]; then
 (
   while true; do
     gw=$(ip route | awk '/default/ { print $3 }' | head -1)

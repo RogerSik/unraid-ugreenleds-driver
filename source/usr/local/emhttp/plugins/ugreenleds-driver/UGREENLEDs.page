@@ -1,0 +1,141 @@
+Menu="Utilities"
+Title="UGREEN LEDs"
+Icon="ugreenleds-driver.png"
+---
+<?php
+$plugin = "ugreenleds-driver";
+$cfg = array_merge(
+  parse_ini_file("/usr/local/emhttp/plugins/$plugin/default.cfg") ?: [],
+  parse_ini_file("/boot/config/plugins/$plugin/settings.cfg") ?: []
+);
+
+// renders a color picker backed by a hidden "R G B" field
+function led_color($cfg, $key) {
+  $rgb = array_map('intval', preg_split('/\s+/', trim($cfg[$key] ?? '0 0 0')));
+  $hex = sprintf('#%02x%02x%02x', $rgb[0] ?? 0, $rgb[1] ?? 0, $rgb[2] ?? 0);
+  return "<input type=\"color\" class=\"led-color\" value=\"$hex\" data-key=\"$key\">".
+         "<input type=\"hidden\" name=\"$key\" value=\"".htmlspecialchars($cfg[$key] ?? '')."\">";
+}
+?>
+<script>
+$(function() {
+  $('.led-color').on('input change', function() {
+    var h = $(this).val();
+    var rgb = [1, 3, 5].map(function(i) { return parseInt(h.substr(i, 2), 16); }).join(' ');
+    $('input[name="' + $(this).data('key') + '"]').val(rgb);
+    $(this.form).find('input[name="#apply"]').prop('disabled', false);
+  });
+  $('select[name="NETDEV_MODE"]').on('change', toggleMode);
+  toggleMode();
+});
+function toggleMode() {
+  var status = $('select[name="NETDEV_MODE"]').val() == 'status';
+  $('.mode-status').toggle(status);
+  $('.mode-speed').toggle(!status);
+}
+</script>
+
+<form markdown="1" name="ugreenleds_settings" method="POST" action="/update.php" target="progressFrame">
+<input type="hidden" name="#file" value="<?=$plugin?>/settings.cfg">
+<input type="hidden" name="#command" value="/plugins/<?=$plugin?>/scripts/restart">
+
+<div markdown="1" class="title"><span class="left">_(Network / status LED)_</span></div>
+
+_(Network LED mode)_:
+: <select name="NETDEV_MODE">
+  <?=mk_option($cfg['NETDEV_MODE'], "status", _("Status (unRAID notifications)"))?>
+  <?=mk_option($cfg['NETDEV_MODE'], "speed", _("Link speed (original)"))?>
+  </select>
+
+> **Status:** OK color without problems, warning color while unread warnings exist, alert color for unread alerts or unreachable gateway. Archiving the notifications resets the LED.
+> **Link speed:** color by link speed, red if the gateway is unreachable, flashes on traffic.
+
+_(Check gateway connectivity)_:
+: <select name="CHECK_GATEWAY_CONNECTIVITY">
+  <?=mk_option($cfg['CHECK_GATEWAY_CONNECTIVITY'], "true", _("Yes"))?>
+  <?=mk_option($cfg['CHECK_GATEWAY_CONNECTIVITY'], "false", _("No"))?>
+  </select>
+
+_(Gateway check interval)_ (_(seconds)_):
+: <input type="number" name="CHECK_NETDEV_INTERVAL" min="5" value="<?=htmlspecialchars($cfg['CHECK_NETDEV_INTERVAL'])?>" class="narrow">
+
+<div markdown="1" class="mode-status">
+_(React to notifications)_:
+: <select name="STATUS_NOTIFY_LEVEL">
+  <?=mk_option($cfg['STATUS_NOTIFY_LEVEL'], "warning", _("Warnings and alerts"))?>
+  <?=mk_option($cfg['STATUS_NOTIFY_LEVEL'], "alert", _("Alerts only"))?>
+  <?=mk_option($cfg['STATUS_NOTIFY_LEVEL'], "off", _("Off (gateway only)"))?>
+  </select>
+
+_(Flash on network activity)_:
+: <select name="NETDEV_BLINK_ACTIVITY">
+  <?=mk_option($cfg['NETDEV_BLINK_ACTIVITY'], "false", _("No"))?>
+  <?=mk_option($cfg['NETDEV_BLINK_ACTIVITY'], "true", _("Yes"))?>
+  </select>
+
+_(Status check interval)_ (_(seconds)_):
+: <input type="number" name="CHECK_STATUS_INTERVAL" min="1" value="<?=htmlspecialchars($cfg['CHECK_STATUS_INTERVAL'])?>" class="narrow">
+
+_(Color OK)_:
+: <?=led_color($cfg, 'COLOR_STATUS_OK')?>
+
+_(Color warning)_:
+: <?=led_color($cfg, 'COLOR_STATUS_WARNING')?>
+
+_(Color alert)_:
+: <?=led_color($cfg, 'COLOR_STATUS_ALERT')?>
+</div>
+
+<div markdown="1" class="mode-speed">
+_(Color unknown speed)_:
+: <?=led_color($cfg, 'COLOR_NETDEV_NORMAL')?>
+
+_(Color 100 Mbit)_:
+: <?=led_color($cfg, 'COLOR_NETDEV_LINK_100')?>
+
+_(Color 1 Gbit)_:
+: <?=led_color($cfg, 'COLOR_NETDEV_LINK_1000')?>
+
+_(Color 2.5 Gbit)_:
+: <?=led_color($cfg, 'COLOR_NETDEV_LINK_2500')?>
+
+_(Color 10 Gbit)_:
+: <?=led_color($cfg, 'COLOR_NETDEV_LINK_10000')?>
+
+_(Color gateway unreachable)_:
+: <?=led_color($cfg, 'COLOR_NETDEV_GATEWAY_UNREACHABLE')?>
+</div>
+
+<div markdown="1" class="title"><span class="left">_(Disk LEDs)_</span></div>
+
+_(Disk mapping method)_:
+: <select name="MAPPING_METHOD">
+  <?=mk_option($cfg['MAPPING_METHOD'], "ata", "ata")?>
+  <?=mk_option($cfg['MAPPING_METHOD'], "hctl", "hctl")?>
+  <?=mk_option($cfg['MAPPING_METHOD'], "serial", "serial")?>
+  </select>
+
+_(Disk serials)_ (_(serial mapping only)_):
+: <input type="text" name="DISK_SERIAL" value="<?=htmlspecialchars($cfg['DISK_SERIAL'])?>">
+
+_(Color healthy)_:
+: <?=led_color($cfg, 'COLOR_DISK_HEALTH')?>
+
+_(Color unavailable)_:
+: <?=led_color($cfg, 'COLOR_DISK_UNAVAIL')?>
+
+_(Brightness)_ (0-255):
+: <input type="number" name="BRIGHTNESS_DISK_LEDS" min="0" max="255" value="<?=htmlspecialchars($cfg['BRIGHTNESS_DISK_LEDS'])?>" class="narrow">
+
+_(Activity refresh interval)_ (_(seconds)_):
+: <input type="text" name="LED_REFRESH_INTERVAL" value="<?=htmlspecialchars($cfg['LED_REFRESH_INTERVAL'])?>" class="narrow">
+
+_(Disk online check interval)_ (_(seconds)_):
+: <input type="number" name="CHECK_DISK_ONLINE_INTERVAL" min="1" value="<?=htmlspecialchars($cfg['CHECK_DISK_ONLINE_INTERVAL'])?>" class="narrow">
+
+<input type="submit" name="#default" value="_(Default)_">
+: <span class="inline-block">
+    <input type="submit" name="#apply" value="_(Apply)_" disabled>
+    <input type="button" value="_(Done)_" onclick="done()">
+  </span>
+</form>

@@ -1,10 +1,12 @@
-# DEPRECATED
-
 # Unraid UGREEN LED Driver Plugin
 
-This is the repository for the Unraid UGREEN LED Driver plugin based on: https://github.com/miskcoo/ugreen_dx4600_leds_controller
+> Continuation of [ich777/unraid-ugreenleds-driver](https://github.com/ich777/unraid-ugreenleds-driver) (archived). Adds a status mode for the network LED and a settings page.
+>
+> **Install:** Plugins > Install Plugin > `https://github.com/RogerSik/unraid-ugreenleds-driver/raw/master/ugreenleds-driver.plg`
 
-**Support Thread:** https://forums.unraid.net/topic/92865-support-ich777-amd-vendor-reset-coraltpu-hpsahba/
+This is the repository for the Unraid UGREEN LED Driver plugin based on: https://github.com/miskcoo/ugreen_leds_controller
+
+**Support:** https://github.com/RogerSik/unraid-ugreenleds-driver/issues
 
 ## What This Plugin Does
 
@@ -36,7 +38,19 @@ The driver supports these UGREEN NAS models:
 | **White** | `255 255 255` | **Disk activity** - Brief flash when I/O detected |
 | **Red** | `255 0 0` | **Disk unavailable/offline** - Disk has gone offline or is not accessible (solid) |
 
-### Network LED Colors
+### Network LED as status LED (default)
+
+With `NETDEV_MODE="status"` the network LED shows the server state instead of the link speed:
+
+| Color | Setting | Meaning |
+|-------|---------|---------|
+| **White** | `COLOR_STATUS_OK` | No unread warnings/alerts, gateway reachable |
+| **Yellow** | `COLOR_STATUS_WARNING` | Unread unRAID warning notifications |
+| **Red** | `COLOR_STATUS_ALERT` | Unread unRAID alerts or gateway unreachable |
+
+Archiving the notifications resets the LED. Configure it under **Settings > User Utilities > UGREEN LEDs**.
+
+### Network LED Colors (`NETDEV_MODE="speed"`)
 
 | Color | RGB Values | Meaning |
 |-------|------------|---------|
@@ -81,6 +95,13 @@ The plugin creates a `settings.cfg` file with these configurable parameters. The
 | `LED_REFRESH_INTERVAL` | `"0.5"` | How often to check for disk activity (seconds) |
 | `CHECK_DISK_ONLINE_INTERVAL` | `"5"` | How often to check disk online status (seconds) |
 | `CHECK_GATEWAY_CONNECTIVITY` | `"true"` | Whether to monitor network connectivity |
+| `NETDEV_MODE` | `"status"` | Network LED mode: `status` (notifications) or `speed` (link speed) |
+| `NETDEV_BLINK_ACTIVITY` | `"false"` | Status mode: flash on network activity |
+| `STATUS_NOTIFY_LEVEL` | `"warning"` | Status mode: `warning` (warnings + alerts), `alert` or `off` |
+| `CHECK_STATUS_INTERVAL` | `"5"` | Status mode: how often to check notifications (seconds) |
+| `COLOR_STATUS_OK` | `"255 255 255"` | Status mode: everything fine (white) |
+| `COLOR_STATUS_WARNING` | `"255 255 0"` | Status mode: unread warnings (yellow) |
+| `COLOR_STATUS_ALERT` | `"255 0 0"` | Status mode: unread alerts / gateway unreachable (red) |
 | `COLOR_NETDEV_NORMAL` | `"255 165 0"` | Color for normal network (orange) |
 | `COLOR_NETDEV_LINK_100` | `"0 255 0"` | Color for 100 Mbps (green) |
 | `COLOR_NETDEV_LINK_1000` | `"0 0 255"` | Color for 1 Gbps (blue) |
@@ -105,4 +126,4 @@ The plugin creates a `settings.cfg` file with these configurable parameters. The
 
 ## Credits
 
-Based on the excellent work by [miskcoo](https://github.com/miskcoo/ugreen_dx4600_leds_controller) for the original UGREEN LED controller implementation.
+Based on the excellent work by [miskcoo](https://github.com/miskcoo/ugreen_leds_controller) for the original UGREEN LED controller implementation.
