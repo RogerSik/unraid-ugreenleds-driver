@@ -14,9 +14,12 @@
   <!ENTITY packages    "/boot/config/plugins/&name;/packages">
 ]>
 
-<PLUGIN  name="&name;" author="&author;" version="&version;" pluginURL="&pluginURL;" min="7.0.0-beta.0.1" support="&repoURL;/issues">
+<PLUGIN  name="&name;" author="&author;" version="&version;" pluginURL="&pluginURL;" launch="Settings/UGREENLEDs" min="7.0.0-beta.0.1" support="&repoURL;/issues">
 
 <CHANGES>
+
+###2026.10.04a
+- Plugin icon on the Plugins page opens the settings
 
 ###2026.10.04
 - Continuation of ich777/unraid-ugreenleds-driver (archived)
