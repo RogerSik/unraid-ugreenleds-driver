@@ -112,12 +112,23 @@ The plugin creates a `settings.cfg` file with these configurable parameters. The
 
 ## Installation
 
-1. Plugins > Install Plugin > `https://github.com/RogerSik/unraid-ugreenleds-driver/releases/latest/download/ugreenleds-driver.plg`
-2. The plugin will automatically detect your UGREEN NAS model
-3. Configuration file will be created at `/boot/config/plugins/ugreenleds-driver/settings.cfg`
-4. LEDs will start working immediately after installation
+Requirements: unRAID 7.0 or newer on a supported UGREEN NAS (see above).
 
-Every install is pinned to a release; updates show up in the plugin manager when a newer release is published.
+1. In the unRAID web UI open **Plugins > Install Plugin**
+2. Paste this URL and click **Install**:
+   ```
+   https://github.com/RogerSik/unraid-ugreenleds-driver/releases/latest/download/ugreenleds-driver.plg
+   ```
+3. Wait for `Installation of UGREEN LED Driver successful`. The plugin downloads the kernel module for your unRAID kernel, detects the model and starts the LEDs right away
+4. Configure it under **Settings > User Utilities > UGREEN LEDs**, **Apply** saves and restarts the LED script
+
+![UGREEN LEDs settings page](images/settings.png)
+
+**Updates:** every install is pinned to a release. New releases show up under **Plugins > Check for Updates**.
+
+**Coming from ich777's plugin:** install the URL above over it, `settings.cfg` is kept.
+
+**Uninstall:** remove it under **Plugins**, then reboot to unload the kernel module.
 
 ## Releasing
 
