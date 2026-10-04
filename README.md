@@ -1,12 +1,12 @@
 # Unraid UGREEN LED Driver Plugin
 
-> Fork of [ich777/unraid-ugreenleds-driver](https://github.com/ich777/unraid-ugreenleds-driver) (deprecated upstream). Adds a status mode for the network LED and a settings page.
+> Continuation of [ich777/unraid-ugreenleds-driver](https://github.com/ich777/unraid-ugreenleds-driver) (archived). Adds a status mode for the network LED and a settings page.
 >
 > **Install:** Plugins > Install Plugin > `https://github.com/RogerSik/unraid-ugreenleds-driver/raw/master/ugreenleds-driver.plg`
 
-This is the repository for the Unraid UGREEN LED Driver plugin based on: https://github.com/miskcoo/ugreen_dx4600_leds_controller
+This is the repository for the Unraid UGREEN LED Driver plugin based on: https://github.com/miskcoo/ugreen_leds_controller
 
-**Support Thread:** https://forums.unraid.net/topic/92865-support-ich777-amd-vendor-reset-coraltpu-hpsahba/
+**Support:** https://github.com/RogerSik/unraid-ugreenleds-driver/issues
 
 ## What This Plugin Does
 
@@ -126,4 +126,4 @@ The plugin creates a `settings.cfg` file with these configurable parameters. The
 
 ## Credits
 
-Based on the excellent work by [miskcoo](https://github.com/miskcoo/ugreen_dx4600_leds_controller) for the original UGREEN LED controller implementation.
+Based on the excellent work by [miskcoo](https://github.com/miskcoo/ugreen_leds_controller) for the original UGREEN LED controller implementation.

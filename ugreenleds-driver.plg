@@ -13,7 +13,7 @@
   <!ENTITY packages    "/boot/config/plugins/&name;/packages">
 ]>
 
-<PLUGIN  name="&name;" author="&author;" version="&version;" pluginURL="&pluginURL;" min="7.0.0-beta.0.1" max="7.3.2" support="https://forums.unraid.net/topic/92865-support-ich777-amd-vendor-reset-coraltpu-hpsahba/">
+<PLUGIN  name="&name;" author="&author;" version="&version;" pluginURL="&pluginURL;" min="7.0.0-beta.0.1" max="7.3.2" support="https://github.com/&author;/unraid-&name;/issues">
 
 <CHANGES>
 
@@ -21,6 +21,7 @@
 - Fork of ich777/unraid-ugreenleds-driver
 - Network LED can act as status LED for unread unRAID notifications (default)
 - Settings page under Settings > User Utilities > UGREEN LEDs
+- Kernel packages from own releases, ich777 releases as fallback
 
 ###2026.09.05
 - Increase the interval from netdev to 500ms
@@ -105,7 +106,21 @@ fi
 
 check() {
 if ! ls -1 &packages;/${KERNEL_V%%-*}/ | grep -q "${PACKAGE}" ; then
-  LAT_PACKAGE="$(wget -qO- https://api.github.com/repos/ich777/unraid-ugreenleds-driver/releases/tags/${KERNEL_V} | jq -r '.assets[].name' | grep "${PACKAGE}" | grep -E -v '\.md5$' | sort -V | tail -1)"
+  # own releases first, archived ich777 releases as fallback for older kernels
+  for REPO in &author; ich777; do
+    LAT_PACKAGE="$(wget -qO- https://api.github.com/repos/${REPO}/unraid-&name;/releases/tags/${KERNEL_V} | jq -r '.assets[].name' 2>/dev/null | grep "${PACKAGE}" | grep -E -v '\.md5$' | sort -V | tail -1)"
+    if [ -n "${LAT_PACKAGE}" ]; then
+      DL_URL="https://github.com/${REPO}/unraid-&name;/releases/download/${KERNEL_V}"
+      break
+    fi
+  done
+  if [ -z "${LAT_PACKAGE}" ]; then
+    echo
+    echo "-----ERROR - ERROR - ERROR - ERROR - ERROR - ERROR - ERROR - ERROR - ERROR-----"
+    echo "------------No UGREEN LED Driver package found for Kernel ${KERNEL_V}-----------"
+    rm -rf &plugin; &emhttp;
+    exit 1
+  fi
   echo
   echo "----------------Downloading UGREEN LED Driver, please wait...!----------------"
   echo "----------This could take some time, please don't close this window!----------"
@@ -125,7 +140,6 @@ install() {
 # Define Variables
 KERNEL_V="$(uname -r)"
 PACKAGE="ugreen_leds"
-DL_URL="https://github.com/ich777/unraid-ugreenleds-driver/releases/download/$KERNEL_V"
 
 # Create package directory for running Kernel
 if [ ! -d "&packages;/${KERNEL_V%%-*}" ]; then
@@ -159,7 +173,7 @@ fi
 
 # Download logo
 if [ ! -f "&plugin;/&name;.png" ]; then
-  wget -q -nc --show-progress --progress=bar:force:noscroll -O "&plugin;/&name;.png" "https://raw.githubusercontent.com/ich777/docker-templates/master/ich777/images/ugreennas.png"
+  wget -q -nc --show-progress --progress=bar:force:noscroll -O "&plugin;/&name;.png" "&gitURL;/images/&name;.png"
 fi
 
 #Install icon

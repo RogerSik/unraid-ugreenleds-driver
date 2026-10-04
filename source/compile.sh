@@ -1,15 +1,15 @@
 # Create necessary directories and clone repository
 mkdir -p /UGREENLEDS/lib/modules/${UNAME}/extra
 cd ${DATA_DIR}
-git clone https://github.com/miskcoo/ugreen_dx4600_leds_controller
-cd ${DATA_DIR}/ugreen_dx4600_leds_controller
+git clone https://github.com/miskcoo/ugreen_leds_controller
+cd ${DATA_DIR}/ugreen_leds_controller
 git checkout master
 PLUGIN_VERSION="$(git log -1 --format="%cs" | sed 's/-//g')"
 
 # Compile module and copy it over to destination
-cd ${DATA_DIR}/ugreen_dx4600_leds_controller/kmod
+cd ${DATA_DIR}/ugreen_leds_controller/kmod
 make -j${CPU_COUNT}
-cp ${DATA_DIR}/ugreen_dx4600_leds_controller/kmod/led-ugreen.ko /UGREENLEDS/lib/modules/${UNAME}/extra/
+cp ${DATA_DIR}/ugreen_leds_controller/kmod/led-ugreen.ko /UGREENLEDS/lib/modules/${UNAME}/extra/
 
 #Compress module
 while read -r line
@@ -30,7 +30,7 @@ tee $TMP_DIR/$VERSION/install/slack-desc <<EOF
        |-----handy-ruler------------------------------------------------------|
 $PLUGIN_NAME: $PLUGIN_NAME Package contents:
 $PLUGIN_NAME:
-$PLUGIN_NAME: Source: https://github.com/miskcoo/ugreen_dx4600_leds_controller
+$PLUGIN_NAME: Source: https://github.com/miskcoo/ugreen_leds_controller
 $PLUGIN_NAME:
 $PLUGIN_NAME:
 $PLUGIN_NAME: Custom $PLUGIN_NAME package for Unraid Kernel v${UNAME%%-*} by ich777
