@@ -1,0 +1,9 @@
+#!/bin/bash
+# restart ugreen-leds so it picks up changed settings
+kill $(pgrep -f "^/bin/bash /usr/bin/ugreen-leds") >/dev/null 2>&1
+sleep 1
+if ! pgrep -f "^/bin/bash /usr/bin/ugreen-leds" >/dev/null 2>&1 ; then
+  rm -f /var/run/ugreen-leds.lock
+fi
+echo "/usr/bin/ugreen-leds" | at now -M >/dev/null 2>&1
+echo "ugreen-leds restarted"
