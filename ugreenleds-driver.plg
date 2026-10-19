@@ -18,6 +18,9 @@
 
 <CHANGES>
 
+###2026.10.19a
+- Update helper: actually wait for ich777's Plugin Update Helper (it runs as plain "sh", pgrep never found it)
+
 ###2026.10.19
 - Own update helper: downloads the kernel module from this repo as soon as an unRAID update is staged (ich777's Plugin Update Helper still points to his archived repo)
 - No more fallback to ich777's archived releases
