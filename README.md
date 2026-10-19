@@ -140,6 +140,8 @@ Requirements: unRAID 7.0 or newer on a supported UGREEN NAS (see above).
 
 The `Build kernel modules` workflow runs daily: it checks unRAID's release feed (stable + latest next, from 7.3.2 on), downloads the release, takes kernel config and patches from `bzmodules` and builds `led-ugreen` against the matching vanilla kernel (`source/build-kmod.sh`). Each kernel gets its own release (tag = kernel release, e.g. `6.18.38-Unraid`), the notes list the unRAID versions using it. Run it by hand via *Actions > Build kernel modules > Run workflow*, optionally for one unRAID version.
 
+When an unRAID update is staged, the plugin's update helper (`scripts/update-helper`) downloads the module for the new kernel from this repo before the reboot. ich777's Plugin Update Helper (installed by other plugins, e.g. it87) still looks in his archived repo and reports the UGREEN download as failed; that error can be ignored.
+
 ## Troubleshooting
 
 - **LEDs not working**: Check if your model is supported and ensure the kernel module loaded correctly

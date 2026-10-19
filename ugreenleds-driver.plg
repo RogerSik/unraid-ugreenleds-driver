@@ -18,6 +18,10 @@
 
 <CHANGES>
 
+###2026.10.19
+- Own update helper: downloads the kernel module from this repo as soon as an unRAID update is staged (ich777's Plugin Update Helper still points to his archived repo)
+- No more fallback to ich777's archived releases
+
 ###2026.10.04a
 - Plugin icon on the Plugins page opens the settings
 
@@ -112,14 +116,8 @@ fi
 
 check() {
 if ! ls -1 &packages;/${KERNEL_V%%-*}/ | grep -q "${PACKAGE}" ; then
-  # own releases first, archived ich777 releases as fallback for older kernels
-  for REPO in &author; ich777; do
-    LAT_PACKAGE="$(wget -qO- https://api.github.com/repos/${REPO}/unraid-&name;/releases/tags/${KERNEL_V} | jq -r '.assets[].name' 2>/dev/null | grep "${PACKAGE}" | grep -E -v '\.md5$' | sort -V | tail -1)"
-    if [ -n "${LAT_PACKAGE}" ]; then
-      DL_URL="https://github.com/${REPO}/unraid-&name;/releases/download/${KERNEL_V}"
-      break
-    fi
-  done
+  LAT_PACKAGE="$(wget -qO- https://api.github.com/repos/&author;/unraid-&name;/releases/tags/${KERNEL_V} | jq -r '.assets[].name' 2>/dev/null | grep "${PACKAGE}" | grep -E -v '\.md5$' | sort -V | tail -1)"
+  DL_URL="&repoURL;/releases/download/${KERNEL_V}"
   if [ -z "${LAT_PACKAGE}" ]; then
     echo
     echo "-----ERROR - ERROR - ERROR - ERROR - ERROR - ERROR - ERROR - ERROR - ERROR-----"
@@ -190,44 +188,10 @@ if [ ! -f "&emhttp;/images/&name;.png" ]; then
   cp &plugin;/&name;.png &emhttp;/images/
 fi
 
-#Check if Plugin Update Helper is downloaded and up-to-date
-if [ ! -f &plugin;/plugin_update_helper ]; then
-  wget -q -T 5 -O &plugin;/plugin_update_helper "https://raw.githubusercontent.com/ich777/unraid-plugin_update_helper/master/plugin_update_helper"
-else
-  CUR_V="$(grep -E "Plugin-Update-Helper version:" &plugin;/plugin_update_helper | awk '{print $4}')"
-  if [ ! -s /tmp/update-helper ]; then
-    echo "$(wget -T5 -qO- https://raw.githubusercontent.com/ich777/unraid-plugin_update_helper/master/plugin_update_helper | grep -E "Plugin-Update-Helper version:" | awk '{print $4}')" > /tmp/update-helper
-    AVAIL_V="$(cat /tmp/update-helper)"
-  else
-    AVAIL_V="$(cat /tmp/update-helper)"
-  fi
-  if [ ! -z "$AVAIL_V" ]; then
-    COMPARE="$(sort -V &lt;(echo -e "${AVAIL_V}\n$CUR_V") | tail -1)"
-    if [ "$CUR_V" != "$COMPARE" ]; then
-      wget -q -T 5 -O &plugin;/plugin_update_helper "https://raw.githubusercontent.com/ich777/unraid-plugin_update_helper/master/plugin_update_helper"
-    fi
-  fi
-fi
-
-#Check if Plugin Update Helper is installed and up to date
-if [ ! -f /usr/bin/plugin_update_helper ]; then
-  cp &plugin;/plugin_update_helper /usr/bin/plugin_update_helper
-  chmod +x /usr/bin/plugin_update_helper
-else
-  PLUGIN_V="$(grep -E "Plugin-Update-Helper version:" &plugin;/plugin_update_helper | awk '{print $4}')"
-  INST_V="$(grep -E "Plugin-Update-Helper version:" /usr/bin/plugin_update_helper | awk '{print $4}')"
-  COMPARE="$(sort -V &lt;(echo -e "${PLUGIN_V}\n$INST_V") | tail -1)"
-  if [ "$INST_V" != "$COMPARE" ]; then
-    kill $(ps aux | grep -E "inotifywait -q /boot/changes.txt -e move_self,delete_self" | grep -v "grep -E inotifywait" | awk '{print $2}') 2>/dev/null
-    sleep 1
-    cp &plugin;/plugin_update_helper /usr/bin/plugin_update_helper
-    chmod +x /usr/bin/plugin_update_helper
-  fi
-fi
-
-#Start Plugin Update Helper
-if [ -z "$(ps aux | grep -E "inotifywait -q /boot/changes.txt -e move_self,delete_self" | grep -v "grep -E inotifywait" | awk '{print $2}')" ]; then
-  echo "/usr/bin/plugin_update_helper" | at now &gt; /dev/null 2&gt;&amp;1
+# Own update helper: downloads the module for the next unRAID version when an OS update is staged
+rm -f &plugin;/plugin_update_helper
+if ! pgrep -f "&emhttp;/scripts/update-helper" >/dev/null 2>&amp;1 ; then
+  echo "&emhttp;/scripts/update-helper" | at now >/dev/null 2>&amp;1
 fi
 
 echo
@@ -244,6 +208,7 @@ echo "----------------------------------------"
 echo "-----Uninstalling UGREEN LED Driver-----"
 echo "----------------------------------------"
 kill $(pgrep -f "/usr/bin/ugreen-leds") >/dev/null 2>&amp;1
+kill $(pgrep -f "&emhttp;/scripts/update-helper") >/dev/null 2>&amp;1
 # Remove plugin related files
 removepkg &name;-&version; >/dev/null 2>&amp;1
 rm -rf &plugin;
