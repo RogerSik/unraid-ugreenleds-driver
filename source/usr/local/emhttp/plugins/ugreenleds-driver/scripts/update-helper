@@ -1,0 +1,54 @@
+#!/bin/bash
+# Download the kernel module for the next unRAID version as soon as an OS update is staged.
+# Replaces the UGREEN part of ich777's Plugin Update Helper, which still points to his archived repo.
+PACKAGES="/boot/config/plugins/ugreenleds-driver/packages"
+PACKAGE="ugreen_leds"
+NOTIFY="/usr/local/emhttp/plugins/dynamix/scripts/notify"
+
+while inotifywait -q /boot/changes.txt -e move_self,delete_self,modify >/dev/null 2>&1
+do
+  # changes.txt gets replaced, wait for the new one
+  for i in 1 2 3 4 5; do
+    [ -f /boot/changes.txt ] && break
+    sleep 2
+  done
+  [ -f /boot/changes.txt ] || continue
+  sleep 2
+
+  if command -v pcregrep >/dev/null 2>&1; then
+    NEW_KERNEL_V="$(pcregrep -oM '#?#? ?Linux kernel[\s]*?(-|\*)? ?version:?\s+\K\d+(\.\d+)+' /boot/changes.txt | sort -V | tail -1)"
+  else
+    NEW_KERNEL_V="$(grep -E -A2 "Linux kernel" /boot/changes.txt | grep -E "version" | awk '{print $3}' | grep "^[0-9]" | sort -V | tail -1)"
+  fi
+  NEW_KERNEL_V="${NEW_KERNEL_V%%-*}"
+  NEW_UNRAID_V="$(head -2 /boot/changes.txt | grep -E "Version" | awk '{print $3}')"
+  if [ -z "${NEW_KERNEL_V}" ]; then
+    ${NOTIFY} -e "UGREEN LED Driver" -d "Can't read the kernel version of unRAID v${NEW_UNRAID_V} from /boot/changes.txt, the module will be downloaded on boot." -i "warning"
+    continue
+  fi
+  [ "${NEW_KERNEL_V}" == "$(uname -r | cut -d- -f1)" ] && continue
+
+  # ich777's helper empties packages/<kernel>/ when its UGREEN download fails, so let it finish first
+  for i in $(seq 1 120); do
+    pgrep -f "/usr/bin/plugin_update_helper" >/dev/null 2>&1 || break
+    sleep 5
+  done
+
+  LAT_PACKAGE="$(wget -qO- https://api.github.com/repos/RogerSik/unraid-ugreenleds-driver/releases/tags/${NEW_KERNEL_V}-Unraid | jq -r '.assets[].name' 2>/dev/null | grep "${PACKAGE}" | grep -E -v '\.md5$' | sort -V | tail -1)"
+  DL_URL="https://github.com/RogerSik/unraid-ugreenleds-driver/releases/download/${NEW_KERNEL_V}-Unraid"
+  if [ -z "${LAT_PACKAGE}" ]; then
+    ${NOTIFY} -e "UGREEN LED Driver" -d "No package for kernel ${NEW_KERNEL_V} (unRAID v${NEW_UNRAID_V}) yet, the LEDs won't work after the reboot. Wait for the 'Build kernel modules' workflow or run it by hand." -i "alert"
+    continue
+  fi
+
+  DIR="${PACKAGES}/${NEW_KERNEL_V}"
+  mkdir -p "${DIR}"
+  if wget -q -O "${DIR}/${LAT_PACKAGE}" "${DL_URL}/${LAT_PACKAGE}" && wget -q -O "${DIR}/${LAT_PACKAGE}.md5" "${DL_URL}/${LAT_PACKAGE}.md5" \
+    && [ "$(md5sum "${DIR}/${LAT_PACKAGE}" | awk '{print $1}')" == "$(awk '{print $1}' "${DIR}/${LAT_PACKAGE}.md5")" ]; then
+    # old kernel's package stays until the next boot (rollback)
+    ${NOTIFY} -e "UGREEN LED Driver" -d "Package for unRAID v${NEW_UNRAID_V} downloaded, ready to reboot. An UGREEN error from the Plugin Update Helper can be ignored."
+  else
+    rm -f "${DIR}/${LAT_PACKAGE}"*
+    ${NOTIFY} -e "UGREEN LED Driver" -d "Download of ${LAT_PACKAGE} failed, the module will be downloaded on boot (needs internet)." -i "alert"
+  fi
+done
