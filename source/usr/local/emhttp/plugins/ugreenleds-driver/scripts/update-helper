@@ -28,9 +28,10 @@ do
   fi
   [ "${NEW_KERNEL_V}" == "$(uname -r | cut -d- -f1)" ] && continue
 
-  # ich777's helper empties packages/<kernel>/ when its UGREEN download fails, so let it finish first
+  # ich777's helper empties packages/<kernel>/ when its UGREEN download fails, so let it finish first.
+  # It has no shebang and runs as plain "sh", so look for the process holding the script open.
   for i in $(seq 1 120); do
-    pgrep -f "/usr/bin/plugin_update_helper" >/dev/null 2>&1 || break
+    find /proc/[0-9]*/fd -lname /usr/bin/plugin_update_helper 2>/dev/null | grep -q . || break
     sleep 5
   done
 
