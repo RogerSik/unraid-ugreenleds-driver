@@ -177,6 +177,53 @@ function unread_notify_level() {
   fi
 }
 
+# prints "<device> <type> <state>" for every disk unRAID knows, type is Parity, Data, Cache, Boot, Flash or - (unassigned),
+# state is error (disabled, read errors, SMART failed), warning (emulated/rebuilding, unacknowledged SMART warning) or ok
+function unraid_disk_states() {
+  local state_dir=/var/local/emhttp files=() f
+  for f in monitor.ini disks.ini devs.ini; do
+    [[ -f $state_dir/$f ]] && files+=("$state_dir/$f")
+  done
+  [[ ${#files[@]} -eq 0 ]] && return
+  awk -v smart_dir="$state_dir/smart" '
+    function flush(  state, file, line) {
+      if (dev != "" && status !~ /_NP$/) {
+        state = "ok"
+        if (color ~ /^yellow/ || (smart_warn[name] && !smart_ack[name])) state = "warning"
+        if (color ~ /^red/ || errors > 0) state = "error"
+        file = smart_dir "/" name
+        while ((getline line < file) > 0) {
+          if (line ~ /^SMART.+: (FAILED|NOK)/) state = "error"
+        }
+        close(file)
+        print dev, (type == "" ? "-" : type), state
+      }
+      name = dev = type = color = status = ""; errors = 0
+    }
+    FNR == 1 { flush(); section = "" }
+    /^\[/ { flush(); section = $0; gsub(/[]["]/, "", section); next }
+    {
+      eq = index($0, "="); if (!eq) next
+      key = substr($0, 1, eq - 1); val = substr($0, eq + 1); gsub(/^"|"$/, "", val)
+    }
+    # monitor.ini, [smart]: <disk>.<attribute>="<value>" per SMART warning, <disk>.ack="true" once acknowledged
+    FILENAME ~ /monitor\.ini$/ {
+      if (section == "smart" && match(key, /\.[^.]+$/)) {
+        if (substr(key, RSTART + 1) == "ack") smart_ack[substr(key, 1, RSTART - 1)] = 1
+        else smart_warn[substr(key, 1, RSTART - 1)] = 1
+      }
+      next
+    }
+    key == "name" { name = val }
+    key == "device" { dev = val }
+    key == "type" { type = val }
+    key == "color" { color = val }
+    key == "status" { status = val }
+    key == "numErrors" { errors = val + 0 }
+    END { flush() }
+  ' "${files[@]}"
+}
+
 # status mode: netdev LED shows unread notifications and gateway connectivity
 function status_led_loop() {
   local gw_ok=true last_gw_check=0 current="" color now level
@@ -274,19 +321,44 @@ elif [ "$CHECK_GATEWAY_CONNECTIVITY" == "true" ]; then
 netdev_check_pid=$!
 fi
 
-# check disk online status
+# disk LED color: offline, unRAID disk health, role or healthy color
 (
+  declare -A led_state disk_type disk_state
   while true; do
+    disk_type=() disk_state=()
+    if [ "$DISK_HEALTH" == "true" ] || [ "$DISK_ROLE_COLORS" == "true" ]; then
+      while read -r dev type state; do
+        disk_type[$dev]=$type
+        disk_state[$dev]=$state
+      done < <(unraid_disk_states)
+    fi
     for led in "${!devices[@]}"; do
       dev=${devices[$led]}
-      if [[ "$(cat /sys/class/leds/$led/color)" != "$COLOR_DISK_HEALTH" ]]; then
-        continue;
-      fi
-
       if [[ ! -f /sys/class/block/${dev}/stat ]]; then
-        echo "$COLOR_DISK_UNAVAIL" > /sys/class/leds/$led/color 2>/dev/null
-        logger "ugreen-leds: Error: Disk /dev/$dev went offline at $(date +%Y-%m-%d' '%H:%M:%S)"
-        continue
+        state=offline color="$COLOR_DISK_UNAVAIL"
+      elif [ "$DISK_HEALTH" == "true" ] && [ "${disk_state[$dev]}" == "error" ]; then
+        state=error color="$COLOR_DISK_ERROR"
+      elif [ "$DISK_HEALTH" == "true" ] && [ "${disk_state[$dev]}" == "warning" ]; then
+        state=warning color="$COLOR_DISK_WARNING"
+      else
+        state=ok color="$COLOR_DISK_HEALTH"
+        if [ "$DISK_ROLE_COLORS" == "true" ]; then
+          case "${disk_type[$dev]}" in
+            Parity) color="$COLOR_DISK_PARITY";;
+            Data) color="$COLOR_DISK_DATA";;
+            Cache|Boot) color="$COLOR_DISK_POOL";;
+          esac
+        fi
+      fi
+      if [ "$state $color" != "${led_state[$led]}" ]; then
+        echo "$color" > /sys/class/leds/$led/color 2>/dev/null
+        case "$state" in
+          ok) [ -n "${led_state[$led]}" ] && logger "ugreen-leds: Info: Disk /dev/$dev ($led) is ok";;
+          warning) logger "ugreen-leds: Warning: Disk /dev/$dev ($led) has a warning in unRAID";;
+          error) logger "ugreen-leds: Error: Disk /dev/$dev ($led) has an error in unRAID";;
+          offline) logger "ugreen-leds: Error: Disk /dev/$dev ($led) went offline";;
+        esac
+        led_state[$led]="$state $color"
       fi
     done
     sleep ${CHECK_DISK_ONLINE_INTERVAL}s

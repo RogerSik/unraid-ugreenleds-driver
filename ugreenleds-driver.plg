@@ -18,6 +18,11 @@
 
 <CHANGES>
 
+###2026.10.24
+- Disk LEDs show unRAID disk health: yellow while a disk is emulated/rebuilt or has a SMART warning, red for disabled disks, read errors or a failed SMART check
+- Optional role colors for healthy disks: parity, array data and pools
+- Weekly check for upstream changes (miskcoo/ugreen_leds_controller) as GitHub issues
+
 ###2026.10.19a
 - Update helper: actually wait for ich777's Plugin Update Helper (it runs as plain "sh", pgrep never found it)
 
