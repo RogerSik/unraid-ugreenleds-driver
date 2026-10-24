@@ -36,7 +36,13 @@ The driver supports these UGREEN NAS models:
 |-------|------------|---------|
 | **White** | `255 255 255` | **Healthy disk** - Normal operation (solid) |
 | **White** | `255 255 255` | **Disk activity** - Brief flash when I/O detected |
+| **Yellow** | `255 255 0` | **Disk warning** - Disk is emulated/being rebuilt or has an unacknowledged SMART warning (solid) |
+| **Red** | `255 0 0` | **Disk error** - Disk is disabled, has read errors or failed the SMART health check (solid) |
 | **Red** | `255 0 0` | **Disk unavailable/offline** - Disk has gone offline or is not accessible (solid) |
+
+Disk health uses what unRAID already knows (`/var/local/emhttp/disks.ini`, `monitor.ini` and the cached SMART reports), so no disk is woken up. Acknowledging a SMART warning on the **Main** page resets the LED, read errors reset when the array is restarted.
+
+With `DISK_ROLE_COLORS="true"` healthy disks show their unRAID role instead: parity (blue), array data (white), pools (green), unassigned devices keep `COLOR_DISK_HEALTH`.
 
 ### Network LED as status LED (default)
 
@@ -66,8 +72,9 @@ Archiving the notifications resets the LED. Configure it under **Settings > User
 
 ### Disk Monitoring
 - **Activity Detection**: LEDs flash briefly (100ms on/off) when disk I/O activity is detected
-- **Health Monitoring**: Continuously checks if disks are online every 5 seconds (configurable)
-- **Status Indicators**: Solid white = healthy disk, solid red = disk offline/unavailable
+- **Health Monitoring**: Checks every 5 seconds (configurable) if disks are online and what unRAID reports about them (disabled, emulated/rebuilding, read errors, SMART)
+- **Status Indicators**: Solid white = healthy disk, solid yellow = warning, solid red = error or disk offline/unavailable
+- **Role Colors** (optional): Parity, array data and pool disks in different colors
 - **Slot Mapping**: Maps physical disk slots to LED indicators using ATA, HCTL, or serial number mapping
 - **Empty Slot Handling**: LEDs are turned off for disk slots that don't have drives installed
 
@@ -92,8 +99,15 @@ The plugin creates a `settings.cfg` file with these configurable parameters. The
 | `COLOR_DISK_HEALTH` | `"255 255 255"` | Color for healthy disks (white) |
 | `BRIGHTNESS_DISK_LEDS` | `"255"` | LED brightness level |
 | `COLOR_DISK_UNAVAIL` | `"255 0 0"` | Color for unavailable disks (red) |
+| `DISK_HEALTH` | `"true"` | Show unRAID disk health on the disk LEDs |
+| `COLOR_DISK_WARNING` | `"255 255 0"` | Disk emulated/rebuilding or SMART warning (yellow) |
+| `COLOR_DISK_ERROR` | `"255 0 0"` | Disk disabled, read errors or SMART failed (red) |
+| `DISK_ROLE_COLORS` | `"false"` | Color healthy disks by unRAID role |
+| `COLOR_DISK_PARITY` | `"0 0 255"` | Role color for parity disks (blue) |
+| `COLOR_DISK_DATA` | `"255 255 255"` | Role color for array data disks (white) |
+| `COLOR_DISK_POOL` | `"0 255 0"` | Role color for pool disks (green) |
 | `LED_REFRESH_INTERVAL` | `"0.5"` | How often to check for disk activity (seconds) |
-| `CHECK_DISK_ONLINE_INTERVAL` | `"5"` | How often to check disk online status (seconds) |
+| `CHECK_DISK_ONLINE_INTERVAL` | `"5"` | How often to check disk online status and health (seconds) |
 | `CHECK_GATEWAY_CONNECTIVITY` | `"true"` | Whether to monitor network connectivity |
 | `NETDEV_MODE` | `"status"` | Network LED mode: `status` (notifications) or `speed` (link speed) |
 | `NETDEV_BLINK_ACTIVITY` | `"false"` | Status mode: flash on network activity |

@@ -25,13 +25,15 @@ $(function() {
     $('input[name="' + $(this).data('key') + '"]').val(rgb);
     $(this.form).find('input[name="#apply"]').prop('disabled', false);
   });
-  $('select[name="NETDEV_MODE"]').on('change', toggleMode);
+  $('select[name="NETDEV_MODE"], select[name="DISK_HEALTH"], select[name="DISK_ROLE_COLORS"]').on('change', toggleMode);
   toggleMode();
 });
 function toggleMode() {
   var status = $('select[name="NETDEV_MODE"]').val() == 'status';
   $('.mode-status').toggle(status);
   $('.mode-speed').toggle(!status);
+  $('.disk-health').toggle($('select[name="DISK_HEALTH"]').val() == 'true');
+  $('.disk-roles').toggle($('select[name="DISK_ROLE_COLORS"]').val() == 'true');
 }
 </script>
 
@@ -121,8 +123,41 @@ _(Disk serials)_ (_(serial mapping only)_):
 _(Color healthy)_:
 : <?=led_color($cfg, 'COLOR_DISK_HEALTH')?>
 
-_(Color unavailable)_:
+_(Color offline)_:
 : <?=led_color($cfg, 'COLOR_DISK_UNAVAIL')?>
+
+_(Show disk health)_:
+: <select name="DISK_HEALTH">
+  <?=mk_option($cfg['DISK_HEALTH'], "true", _("Yes"))?>
+  <?=mk_option($cfg['DISK_HEALTH'], "false", _("No"))?>
+  </select>
+
+> **Disk health:** error color for disabled disks, read errors or a failed SMART check, warning color while a disk is emulated/rebuilt or has a SMART warning. Acknowledging the SMART warning on the Main page resets the LED.
+
+<div markdown="1" class="disk-health">
+_(Color warning)_:
+: <?=led_color($cfg, 'COLOR_DISK_WARNING')?>
+
+_(Color error)_:
+: <?=led_color($cfg, 'COLOR_DISK_ERROR')?>
+</div>
+
+_(Color by role)_:
+: <select name="DISK_ROLE_COLORS">
+  <?=mk_option($cfg['DISK_ROLE_COLORS'], "false", _("No"))?>
+  <?=mk_option($cfg['DISK_ROLE_COLORS'], "true", _("Yes"))?>
+  </select>
+
+<div markdown="1" class="disk-roles">
+_(Color parity)_:
+: <?=led_color($cfg, 'COLOR_DISK_PARITY')?>
+
+_(Color array data)_:
+: <?=led_color($cfg, 'COLOR_DISK_DATA')?>
+
+_(Color pool)_:
+: <?=led_color($cfg, 'COLOR_DISK_POOL')?>
+</div>
 
 _(Brightness)_ (0-255):
 : <input type="number" name="BRIGHTNESS_DISK_LEDS" min="0" max="255" value="<?=htmlspecialchars($cfg['BRIGHTNESS_DISK_LEDS'])?>" class="narrow">
@@ -130,7 +165,7 @@ _(Brightness)_ (0-255):
 _(Activity refresh interval)_ (_(seconds)_):
 : <input type="text" name="LED_REFRESH_INTERVAL" value="<?=htmlspecialchars($cfg['LED_REFRESH_INTERVAL'])?>" class="narrow">
 
-_(Disk online check interval)_ (_(seconds)_):
+_(Disk status check interval)_ (_(seconds)_):
 : <input type="number" name="CHECK_DISK_ONLINE_INTERVAL" min="1" value="<?=htmlspecialchars($cfg['CHECK_DISK_ONLINE_INTERVAL'])?>" class="narrow">
 
 <input type="submit" name="#default" value="_(Default)_">
