@@ -142,6 +142,10 @@ The `Build kernel modules` workflow runs daily: it checks unRAID's release feed 
 
 When an unRAID update is staged, the plugin's update helper (`scripts/update-helper`) downloads the module for the new kernel from this repo before the reboot. ich777's Plugin Update Helper (installed by other plugins, e.g. it87) still looks in his archived repo and reports the UGREEN download as failed; that error can be ignored.
 
+## Upstream changes
+
+New kernel releases always build `led-ugreen` from upstream master, kernels that already have a release are not rebuilt. The LED logic (`source/usr/bin/ugreen-leds`) is this plugin's own and does not use upstream's `scripts/`. The `Watch upstream` workflow runs weekly and opens an issue (label `upstream`) for every new upstream commit touching `kmod/` or `scripts/`, so it can be checked and ported if relevant.
+
 ## Troubleshooting
 
 - **LEDs not working**: Check if your model is supported and ensure the kernel module loaded correctly

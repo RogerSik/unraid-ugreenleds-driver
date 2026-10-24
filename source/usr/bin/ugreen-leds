@@ -4,7 +4,6 @@ exit-ugreen-leds() {
   if [[ -f "/var/run/ugreen-leds.lock" ]]; then
     rm -f "/var/run/ugreen-leds.lock"
   fi
-  kill $smart_check_pid 2>/dev/null
   kill $netdev_check_pid 2>/dev/null
   kill $disk_online_check_pid 2>/dev/null
 }
@@ -26,7 +25,7 @@ source /boot/config/plugins/ugreenleds-driver/settings.cfg
 
 # hctl, $> lsblk -S -x hctl -o hctl,serial,name 
 # NOTE: It is reported that the order below should be adjusted for each model. 
-#     Please check the disk mapping section in https://github.com/miskcoo/ugreen_dx4600_leds_controller/blob/master/README.md.
+#     Please check the disk mapping section in https://github.com/miskcoo/ugreen_leds_controller/blob/master/README.md.
 hctl_map=("0:0:0:0" "1:0:0:0" "2:0:0:0" "3:0:0:0" "4:0:0:0" "5:0:0:0" "6:0:0:0" "7:0:0:0")
 # serial number, $> lsblk -S -x hctl -o hctl,serial,name 
 serial_map=(${DISK_SERIAL})
