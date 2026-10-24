@@ -1,0 +1,54 @@
+name: Watch upstream
+
+# opens one issue per upstream commit touching the kernel module or the LED scripts,
+# the scripts are not used here and have to be ported to source/usr/bin/ugreen-leds by hand
+on:
+  schedule:
+    - cron: "41 5 * * 1"
+  workflow_dispatch:
+    inputs:
+      days:
+        description: "Look back this many days"
+        required: false
+        default: "8"
+
+permissions:
+  issues: write
+
+jobs:
+  watch:
+    runs-on: ubuntu-latest
+    env:
+      GH_TOKEN: ${{ github.token }}
+      GH_REPO: ${{ github.repository }}
+      UPSTREAM: miskcoo/ugreen_leds_controller
+      DAYS: ${{ inputs.days || '8' }}
+    steps:
+      - name: Open issues for new upstream commits
+        run: |
+          gh label create upstream --color c5def5 --description "Change in ${UPSTREAM}" 2>/dev/null || true
+          since="$(date -u -d "${DAYS} days ago" +%Y-%m-%dT%H:%M:%SZ)"
+          # oldest first, one line per commit even if it touches both paths
+          shas="$(for path in kmod scripts; do
+            gh api "repos/${UPSTREAM}/commits?path=${path}&since=${since}&per_page=100" --jq '.[] | "\(.commit.committer.date) \(.sha)"'
+          done | sort -u | awk '{print $2}')"
+          known="$(gh issue list --state all --label upstream --limit 1000 --json title --jq '.[].title')"
+          for sha in $shas; do
+            short="${sha:0:7}"
+            if grep -qF "(${short})" <<< "$known"; then
+              continue
+            fi
+            commit="$(gh api "repos/${UPSTREAM}/commits/${sha}")"
+            subject="$(jq -r '.commit.message | split("\n")[0]' <<< "$commit")"
+            files="$(jq -r '.files[].filename | select(startswith("kmod/") or startswith("scripts/")) | "- `\(.)`"' <<< "$commit")"
+            body="$(cat <<EOF
+          Upstream commit: https://github.com/${UPSTREAM}/commit/${sha}
+
+          ${files}
+
+          - \`kmod/\`: new unRAID kernels are built from upstream master automatically, existing kernel releases are not rebuilt.
+          - \`scripts/\`: not used by this plugin, port to \`source/usr/bin/ugreen-leds\` if relevant.
+          EOF
+            )"
+            gh issue create --label upstream --title "Upstream: ${subject} (${short})" --body "$body"
+          done

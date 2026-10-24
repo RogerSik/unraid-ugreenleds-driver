@@ -89,7 +89,7 @@ rm -f $(ls &plugin;/i2c-tools-*-x86_64-1.txz 2>/dev/null|grep -v '&i2c-version;'
 **UGREEN LED Driver**
 
 This package contains the UGREEN LED Driver which will allow you to get your LEDs to work on your UGREEN NAS (please note that not all models are supported).
-The plugin is based on: https://github.com/miskcoo/ugreen_dx4600_leds_controller
+The plugin is based on: https://github.com/miskcoo/ugreen_leds_controller
 </INLINE>
 </FILE>
 
