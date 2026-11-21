@@ -18,6 +18,10 @@
 
 <CHANGES>
 
+###2026.11.21b
+- Update helper removed: the module for a new kernel is downloaded on boot (as before the helper existed)
+- A failed module download no longer deletes the plugin directory (settings were lost)
+
 ###2026.11.21a
 - Restarting the update helper only matches the helper process itself, not other processes mentioning its path
 
@@ -115,7 +119,7 @@ if wget -q -nc --show-progress --progress=bar:force:noscroll -O "&packages;/${KE
     echo
     echo "-----ERROR - ERROR - ERROR - ERROR - ERROR - ERROR - ERROR - ERROR - ERROR------"
     echo "--------------------------------CHECKSUM ERROR!---------------------------------"
-    rm -rf &plugin; &emhttp;
+    rm -f &packages;/${KERNEL_V%%-*}/${LAT_PACKAGE}*
     exit 1
   fi
   echo
@@ -124,7 +128,7 @@ else
   echo
   echo "-----ERROR - ERROR - ERROR - ERROR - ERROR - ERROR - ERROR - ERROR - ERROR-----"
   echo "---------------------Can't download UGREEN LED Driver--------------------------"
-  rm -rf &plugin; &emhttp;
+  rm -f &packages;/${KERNEL_V%%-*}/${LAT_PACKAGE}*
   exit 1
 fi
 }
@@ -137,7 +141,6 @@ if ! ls -1 &packages;/${KERNEL_V%%-*}/ | grep -q "${PACKAGE}" ; then
     echo
     echo "-----ERROR - ERROR - ERROR - ERROR - ERROR - ERROR - ERROR - ERROR - ERROR-----"
     echo "------------No UGREEN LED Driver package found for Kernel ${KERNEL_V}-----------"
-    rm -rf &plugin; &emhttp;
     exit 1
   fi
   echo
@@ -203,13 +206,11 @@ if [ ! -f "&emhttp;/images/&name;.png" ]; then
   cp &plugin;/&name;.png &emhttp;/images/
 fi
 
-# Own update helper: downloads the module for the next unRAID version when an OS update is staged
-# (re)start it so a plugin update runs the new script; its inotifywait child goes too
+# Update helper of versions up to 2026.11.21a is gone (module for a new kernel comes on boot), stop a running one
 rm -f &plugin;/plugin_update_helper
 for pid in $(pgrep -f "^/bin/bash &emhttp;/scripts/update-helper$"); do
   kill ${pid} $(pgrep -P ${pid}) >/dev/null 2>&amp;1
 done
-echo "&emhttp;/scripts/update-helper" | at now >/dev/null 2>&amp;1
 
 echo
 echo "-----------------Installation of UGREEN LED Driver successful-----------------"
@@ -225,9 +226,6 @@ echo "----------------------------------------"
 echo "-----Uninstalling UGREEN LED Driver-----"
 echo "----------------------------------------"
 kill $(pgrep -f "/usr/bin/ugreen-leds") >/dev/null 2>&amp;1
-for pid in $(pgrep -f "^/bin/bash &emhttp;/scripts/update-helper$"); do
-  kill ${pid} $(pgrep -P ${pid}) >/dev/null 2>&amp;1
-done
 # Remove plugin related files
 removepkg &name;-&version; >/dev/null 2>&amp;1
 rm -rf &plugin;
