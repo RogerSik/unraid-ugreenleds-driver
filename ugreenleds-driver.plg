@@ -18,6 +18,10 @@
 
 <CHANGES>
 
+###2026.11.21
+- Update helper survives OS updates: unRAID's update killed its inotifywait (same arguments as ich777's helper), so the module was never downloaded before the reboot
+- Update helper is restarted on plugin updates, alerts only once per kernel
+
 ###2026.10.24
 - Disk LEDs show unRAID disk health: yellow while a disk is emulated/rebuilt or has a SMART warning, red for disabled disks, read errors or a failed SMART check
 - Optional role colors for healthy disks: parity, array data and pools
@@ -197,10 +201,12 @@ if [ ! -f "&emhttp;/images/&name;.png" ]; then
 fi
 
 # Own update helper: downloads the module for the next unRAID version when an OS update is staged
+# (re)start it so a plugin update runs the new script; its inotifywait child goes too
 rm -f &plugin;/plugin_update_helper
-if ! pgrep -f "&emhttp;/scripts/update-helper" >/dev/null 2>&amp;1 ; then
-  echo "&emhttp;/scripts/update-helper" | at now >/dev/null 2>&amp;1
-fi
+for pid in $(pgrep -f "&emhttp;/scripts/update-helper"); do
+  kill ${pid} $(pgrep -P ${pid}) >/dev/null 2>&amp;1
+done
+echo "&emhttp;/scripts/update-helper" | at now >/dev/null 2>&amp;1
 
 echo
 echo "-----------------Installation of UGREEN LED Driver successful-----------------"
@@ -216,7 +222,9 @@ echo "----------------------------------------"
 echo "-----Uninstalling UGREEN LED Driver-----"
 echo "----------------------------------------"
 kill $(pgrep -f "/usr/bin/ugreen-leds") >/dev/null 2>&amp;1
-kill $(pgrep -f "&emhttp;/scripts/update-helper") >/dev/null 2>&amp;1
+for pid in $(pgrep -f "&emhttp;/scripts/update-helper"); do
+  kill ${pid} $(pgrep -P ${pid}) >/dev/null 2>&amp;1
+done
 # Remove plugin related files
 removepkg &name;-&version; >/dev/null 2>&amp;1
 rm -rf &plugin;
